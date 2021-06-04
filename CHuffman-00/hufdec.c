@@ -104,7 +104,6 @@ void loadTable(char ***table,FILE *fin,int depth,char bit) {
 			loadTable(table,fin,depth+1,'1');
 		}
 	}
-
 }
 
 
