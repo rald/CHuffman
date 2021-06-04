@@ -2,12 +2,14 @@
 #include <limits.h>
 #include "pqueue.h"
 
+#define DEBUG 0
+#define TABLE_MAX 257
 #define BITS_MAX 256
+#define FREQ_MAX 256
 
-char *code[256];
 
 
-void BT_Walk(PQ_Node** head, int space,char bit) {
+void BT_Walk(PQ_Node** head, char ***table,int space,char bit) {
 
 	static char bits[BITS_MAX]={0};
 
@@ -15,16 +17,16 @@ void BT_Walk(PQ_Node** head, int space,char bit) {
         return;
 	}
 
-	for(int i=0;i<space;i++) printf("\t");
+	for(int i=0;i<space+1;i++) printf("\t");
 
 	if(bit!='X') {
 
-	    bits[space++]=bit;
-		bits[space]='\0';
+	    bits[space]=bit;
+		bits[space+1]='\0';
 
 		if((*head)->data!=-1) {
 			printf("%d->%d->%s\n",(*head)->data,(*head)->priority,bits);
-			code[(*head)->data]=strdup(bits);
+			(*table)[(*head)->data]=strdup(bits);
 		} else {
 			printf("%d->%d->%c\n",(*head)->data,(*head)->priority,bit);
 		}
@@ -34,16 +36,16 @@ void BT_Walk(PQ_Node** head, int space,char bit) {
 		printf("%d->%d->%c\n",(*head)->data,(*head)->priority,bit);
 	}
 
-	BT_Walk(&((*head)->left),space,'0');
-	BT_Walk(&((*head)->right),space,'1');
+	BT_Walk(&((*head)->left),table,space+1,'0');
+	BT_Walk(&((*head)->right),table,space+1,'1');
 
 }
 
 
 
-void encode(char *filename) {
+void encode(char ***table,char *filename) {
 
-	printf("--- ENCODE ---\n");
+if(DEBUG)	printf("--- ENCODE ---\n");
 
 	FILE *fin=NULL;
 	FILE *fout=NULL;
@@ -65,23 +67,23 @@ void encode(char *filename) {
 	int b=0;
 	int j=0;
 	while((ch=fgetc(fin))!=EOF) {
-		for(int i=0;i<strlen(code[ch]);i++) {
-			b|=(code[ch][i]=='0'?0:1)<<(7-j);
+		for(int i=0;i<strlen((*table)[ch]);i++) {
+			b|=((*table)[ch][i]=='0'?0:1)<<(7-j);
 			j++;
 			if(j==8) {
 				fputc(b,fout);
-				printf("%02X ",b);
+if(DEBUG)		printf("%02X ",b);
 				b=0;
 				j=0;
 			}
 		}
 	}
 	ch=256;
-	for(int i=0;i<strlen(code[ch]);i++) {
-		b|=(code[ch][i]=='0'?0:1)<<(7-j);
+	for(int i=0;i<strlen((*table)[ch]);i++) {
+		b|=((*table)[ch][i]=='0'?0:1)<<(7-j);
 		j++;
 		if(j==8) {
-			printf("%02X ",b);
+if(DEBUG)	printf("%02X ",b);
 			fputc(b,fout);
 			b=0;
 			j=0;
@@ -89,7 +91,7 @@ void encode(char *filename) {
 	}
 	if(b!=0) {
 		fputc(b,fout);
-		printf("%02X ",b);
+if(DEBUG)	printf("%02X ",b);
 	}
 
 	printf("\n");
@@ -101,9 +103,9 @@ void encode(char *filename) {
 
 
 
-void decode(char *filename) {
+void decode(char ***table,char *filename) {
 
-	printf("--- DECODE ---\n");
+if(DEBUG)	printf("--- DECODE ---\n");
 
 	FILE *fin=NULL;
 	FILE *fout=NULL;
@@ -135,17 +137,17 @@ void decode(char *filename) {
 			i++;
 			int k=-1;
 			for(int l=0;l<257;l++) {
-				if((code[l]!=NULL) && (!strcmp(b,code[l]))) {
+				if(((*table)[l]!=NULL) && (!strcmp(b,(*table)[l]))) {
 					k=l;
 					break;
 				}
 			}
 			if(k==256) {
-				printf("%d->%s\n",k,b);
+if(DEBUG)		printf("%d->%s\n",k,b);
 				goto terminate;
 			} else if(k!=-1) {
-				printf("%d->%s\n",k,b);
 				fputc(k,fout);
+if(DEBUG)		printf("%d->%s\n",k,b);
 				i=0;
 				b[0]='\0';
 			}
@@ -159,13 +161,49 @@ terminate:
 
 
 
+void saveTable(PQ_Node** head,FILE *fout) {
+	if((*head)==NULL) return;
+
+	if(((*head)->left==NULL) && ((*head)->right==NULL)) {
+		fprintf(fout,"0 ");
+		if((*head)->data==FREQ_MAX && (*head)->priority==0) {
+			fprintf(fout,"XX ");
+		} else {
+			fprintf(fout,"%02X ",(*head)->data);
+		}
+	} else {
+		fprintf(fout,"1 ");
+	}
+	saveTable(&((*head)->left),fout);
+	saveTable(&((*head)->right),fout);
+}
+
+void saveTableX(PQ_Node** head,char *filename) {
+	char outfile[PATH_MAX];
+	strcpy(outfile,filename);
+	strcat(outfile,".tab");
+	FILE *fout=fopen(outfile,"wb");
+	saveTable(head,fout);
+	fclose(fout);
+}
+
+PQ_Node* loadTable(char *filename) {
+
+}
+
 int main(int argc,char **argv) {
 
 	FILE *fin=NULL;
 
 	int ch='\0';
-	int f[256]={0};
+	int freq[FREQ_MAX]={0};
     PQ_Node *pq=NULL;
+
+	char **table=malloc(sizeof(*table)*TABLE_MAX);
+
+	for(int i=0;i<TABLE_MAX;i++) {
+		table[i]=NULL;
+	}
 
 	fin=fopen(argv[1],"rb");
 
@@ -175,15 +213,15 @@ int main(int argc,char **argv) {
 	}
 
 	while((ch=fgetc(fin))!=EOF) {
-		f[ch]++;
+		freq[ch]++;
 	}
 
 	fclose(fin);
 
-	for(int i=0;i<256;i++) {
-		if(f[i]) PQ_Push(&pq,i,f[i],NULL,NULL);
+	for(int i=0;i<FREQ_MAX;i++) {
+		if(freq[i]) PQ_Push(&pq,i,freq[i],NULL,NULL);
 	}
-	PQ_Push(&pq,256,0,NULL,NULL);
+	PQ_Push(&pq,FREQ_MAX,0,NULL,NULL);
 
 	while(PQ_Length(&pq)>=2) {
 		PQ_Node *l=PQ_Pop(&pq);
@@ -191,16 +229,18 @@ int main(int argc,char **argv) {
 		PQ_Push(&pq,-1,l->priority+r->priority,l,r);
 	}
 
-	for(int i=-1;i<257;i++) code[i]=NULL;
+	BT_Walk(&pq,&table,-1,'X');
 
+	for(int i=0;i<257;i++) {
+		if(table[i]) printf("%d->%s\n",i,table[i]);
+	}
 
-	BT_Walk(&pq,0,'X');
+	saveTableX(&pq,argv[1]);
 
-	for(int i=0;i<257;i++) if(code[i]) printf("%d->%s\n",i,code[i]);
+	encode(&table,argv[1]);
 
-	encode(argv[1]);
-
-	decode(argv[1]);
+	decode(&table,argv[1]);
 
     return EXIT_SUCCESS;
 }
+
