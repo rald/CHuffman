@@ -17,7 +17,7 @@ void BT_Walk(PQ_Node** head, char ***table,int space,char bit) {
         return;
 	}
 
-	for(int i=0;i<space+1;i++) printf("\t");
+if(DEBUG)	for(int i=0;i<space+1;i++) printf("\t");
 
 	if(bit!='X') {
 
