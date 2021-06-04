@@ -189,14 +189,14 @@ void saveTable(PQ_Node** head,FILE *fout) {
 	if((*head)==NULL) return;
 
 	if(((*head)->left==NULL) && ((*head)->right==NULL)) {
-		fprintf(fout,"00 ");
+		fprintf(fout,"00\n");
 		if((*head)->data==FREQ_MAX && (*head)->priority==0) {
-			fprintf(fout,"XX ");
+			fprintf(fout,"XX\n");
 		} else {
-			fprintf(fout,"%02X ",(*head)->data);
+			fprintf(fout,"%02X\n",(*head)->data);
 		}
 	} else {
-		fprintf(fout,"01 ");
+		fprintf(fout,"01\n");
 	}
 	saveTable(&((*head)->left),fout);
 	saveTable(&((*head)->right),fout);
