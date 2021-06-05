@@ -2,10 +2,18 @@
 #include <limits.h>
 #include "pqueue.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define TABLE_MAX 257
 #define BITS_MAX 256
 #define FREQ_MAX 256
+
+
+
+void clearTable(char*** table) {
+	for(int i=0;i<TABLE_MAX;i++) {
+		(*table)[i]=NULL;
+	}
+}
 
 
 
@@ -45,7 +53,9 @@ if(DEBUG)		printf("OO->%d->%c\n",(*head)->priority,bit);
 
 
 void BT_WalkX(PQ_Node** head, char ***table) {
-	BT_Walk(pq,table,-1,'X');
+if(DEBUG)	printf("--- BT_WalkX ---\n");
+	clearTable(table);
+	BT_Walk(head,table,-1,'X');
 }
 
 
@@ -60,15 +70,6 @@ if(DEBUG) 		printf("XX->%s\n",(*table)[i]);
 if(DEBUG)		printf("%02X->%s\n",i,(*table)[i]);
 			}
 		}
-	}
-}
-
-
-
-void clearTable(char*** table) {
-if(DEBUG)	printf("--- clearTable ---\n");
-	for(int i=0;i<TABLE_MAX;i++) {
-		(*table)[i]=NULL;
 	}
 }
 
@@ -133,7 +134,6 @@ if(DEBUG)	printf("\n");
 }
 
 void saveTable(PQ_Node** head,FILE *fout) {
-if(DEBUG)	printf("--- saveTable ---\n");
 	if((*head)==NULL) return;
 
 	if(((*head)->left==NULL) && ((*head)->right==NULL)) {
@@ -153,6 +153,7 @@ if(DEBUG)	printf("--- saveTable ---\n");
 
 
 void saveTableX(PQ_Node** head,char *filename) {
+if(DEBUG)	printf("--- saveTableX ---\n");
 	char outfile[PATH_MAX];
 	strcpy(outfile,filename);
 	strcat(outfile,".tab");
@@ -162,7 +163,10 @@ void saveTableX(PQ_Node** head,char *filename) {
 }
 
 
-PQ_Node* createTree(char *filename) {
+PQ_Node* createHuffmanTree(char *filename) {
+
+if(DEBUG)	printf("--- createHuffmanTree ---\n");
+
 
     PQ_Node *pq=NULL;
 	FILE *fin=NULL;
@@ -201,13 +205,13 @@ int main(int argc,char **argv) {
 	char **table=malloc(sizeof(*table)*TABLE_MAX);
 	PQ_Node *pq=NULL;
 
-	pq=createTable(argv[1]);
+	pq=createHuffmanTree(argv[1]);
 
-	clearTable(&table);
-
-	BT_Walk(&pq,&table);
+	BT_WalkX(&pq,&table);
 
 	saveTableX(&pq,argv[1]);
+
+	BT_PrintTable(&table);
 
 	encode(&table,argv[1]);
 

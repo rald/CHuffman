@@ -17,9 +17,24 @@ void clearTable(char*** table) {
 
 
 
+void BT_PrintTable(char*** table) {
+if(DEBUG)	printf("--- BT_PrintTable ---\n");
+	for(int i=0;i<TABLE_MAX;i++) {
+		if((*table)[i]) {
+	 		if(i==256) {
+if(DEBUG) 		printf("XX->%s\n",(*table)[i]);
+			} else {
+if(DEBUG)		printf("%02X->%s\n",i,(*table)[i]);
+			}
+		}
+	}
+}
+
+
+
 void decode(char ***table,char *filename) {
 
-if(DEBUG)	printf("--- DECODE ---\n");
+if(DEBUG)	printf("--- decode ---\n");
 
 	FILE *fin=NULL;
 	FILE *fout=NULL;
@@ -109,6 +124,9 @@ void loadTable(char ***table,FILE *fin,int depth,char bit) {
 
 
 char** loadTableX(char *filename) {
+
+if(DEBUG)	printf("--- loadTableX ---\n");
+
 	char **table=malloc(sizeof(*table)*TABLE_MAX);
 	FILE *fin=NULL;
 
@@ -136,9 +154,11 @@ char** loadTableX(char *filename) {
 
 int main(int argc,char **argv) {
 
-	char **table2=loadTableX(argv[1]);
+	char **table=loadTableX(argv[1]);
 
-	decode(&table2,argv[1]);
+	BT_PrintTable(&table);
+
+	decode(&table,argv[1]);
 
     return EXIT_SUCCESS;
 }
