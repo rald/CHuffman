@@ -2,7 +2,7 @@
 #include <limits.h>
 #include "pqueue.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define TABLE_MAX 257
 #define BITS_MAX 256
 #define FREQ_MAX 256
